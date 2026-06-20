@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+
+[project]
+name="puzzle-tree"
+version="0.1.1"
+dependencies=[
+    "ttable>=0.7.0",
+    "z3-solver>=4.16.0.0",
+    "sortedcontainers"
+]
+
+requires-python = ">= 3.13"
+authors = [
+  {name = "Andrew Fleming", email = "flemingoflemingoflemingo@gmail.com"}
+]
+description = "A program to plot out the various paths and components when designing puzzles"
+readme = "README.md"
+
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]   
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/puzzle_tree"]
