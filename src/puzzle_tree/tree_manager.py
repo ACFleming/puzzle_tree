@@ -57,7 +57,7 @@ class TreeMananger():
         self.current_file: str | None = None
         self.unsaved: bool = False
 
-    class AddRootNode(se)
+    # class AddRootNode(se)
 
     def addRootNode(self, label, description=""):
         new_root_node = AnnotatedNode(RootNode,label, description)
