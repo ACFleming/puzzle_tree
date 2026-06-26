@@ -13,6 +13,8 @@ from puzzle_tree.node_logic import (
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 @pytest.fixture
 def root_edge_leaf():
+    """Testing the root edge leaf connection
+    """
     r = RootNode()
     e = Edge()
     l = LeafNode()
@@ -21,15 +23,26 @@ def root_edge_leaf():
     return r, e, l
 
 @pytest.fixture
+def root_leaf_no_edge():
+    """Testing the root leaf no edge error
+    """
+    r = RootNode()
+    l = LeafNode()
+    StateObj.connect(r, l)
+
+@pytest.fixture
 def or_config():
     r1, r2 = RootNode(), RootNode()
     e1, e2 = Edge(), Edge()
     or_node = ORNode()
     e3 = Edge()
     leaf = LeafNode()
-    StateObj.connect(r1, e1); StateObj.connect(r2, e2)
-    StateObj.connect(e1, or_node); StateObj.connect(e2, or_node)
-    StateObj.connect(or_node, e3); StateObj.connect(e3, leaf)
+    StateObj.connect(r1, e1)
+    StateObj.connect(r2, e2)
+    StateObj.connect(e1, or_node)
+    StateObj.connect(e2, or_node)
+    StateObj.connect(or_node, e3)
+    StateObj.connect(e3, leaf)
     return r1, r2, or_node, leaf
 
 @pytest.fixture
@@ -39,9 +52,12 @@ def and_config():
     and_node = ANDNode()
     e3 = Edge()
     leaf = LeafNode()
-    StateObj.connect(r1, e1); StateObj.connect(r2, e2)
-    StateObj.connect(e1, and_node); StateObj.connect(e2, and_node)
-    StateObj.connect(and_node, e3); StateObj.connect(e3, leaf)
+    StateObj.connect(r1, e1)
+    StateObj.connect(r2, e2)
+    StateObj.connect(e1, and_node)
+    StateObj.connect(e2, and_node)
+    StateObj.connect(and_node, e3)
+    StateObj.connect(e3, leaf)
     return r1, r2, and_node, leaf
 
 @pytest.fixture
@@ -65,8 +81,10 @@ def switch_config():
     leaf_up, leaf_down = LeafNode(), LeafNode()
     StateObj.connect(root, e_in)
     StateObj.connect(e_in, switch)
-    StateObj.connect(switch, e_up);   StateObj.connect(e_up,   leaf_up)
-    StateObj.connect(switch, e_down); StateObj.connect(e_down, leaf_down)
+    StateObj.connect(switch, e_up)
+    StateObj.connect(e_up,   leaf_up)
+    StateObj.connect(switch, e_down)
+    StateObj.connect(e_down, leaf_down)
     return root, e_in, switch, e_up, e_down, leaf_up, leaf_down
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
@@ -78,9 +96,9 @@ def switch_config():
 ])
 def test_root_edge_leaf(root_edge_leaf, root_input, expected):
     root, edge, leaf = root_edge_leaf
-    root.setState(root_input)
-    assert edge.getState() == expected
-    assert leaf.getState() == expected
+    root.set_state(root_input)
+    assert edge.state == expected
+    assert leaf.state == expected
 
 @pytest.mark.parametrize("r1_input,r2_input,expected", [
     (False, False, False),
@@ -91,9 +109,9 @@ def test_root_edge_leaf(root_edge_leaf, root_input, expected):
 # Test OR Node
 def test_or_node(or_config, r1_input, r2_input, expected):
     r1, r2, or_node, leaf = or_config
-    r1.setState(r1_input)
-    r2.setState(r2_input)
-    assert leaf.getState() == expected
+    r1.set_state(r1_input)
+    r2.set_state(r2_input)
+    assert leaf.state == expected
 
 
 @pytest.mark.parametrize("r1_input,r2_input,expected", [
@@ -106,9 +124,9 @@ def test_or_node(or_config, r1_input, r2_input, expected):
 # Test AND Node
 def test_and_node(and_config, r1_input, r2_input, expected):
     r1, r2, and_node, leaf = and_config
-    r1.setState(r1_input)
-    r2.setState(r2_input)
-    assert leaf.getState() == expected
+    r1.set_state(r1_input)
+    r2.set_state(r2_input)
+    assert leaf.state == expected
 
 @pytest.mark.parametrize("root_input,expected", [
     (False, True),
@@ -116,8 +134,8 @@ def test_and_node(and_config, r1_input, r2_input, expected):
 ])
 def test_not_node(not_config, root_input, expected):
     root, e1,not_node, e2, leaf = not_config
-    root.setState(root_input)
-    assert leaf.getState() == expected
+    root.set_state(root_input)
+    assert leaf.state == expected
 
 @pytest.mark.parametrize("root_input,switch_positions, expected_up, expected_down", [
     (False, {0:False,   1:False},   False,  False),
@@ -131,7 +149,7 @@ def test_not_node(not_config, root_input, expected):
 ])
 def test_switch_node(switch_config, root_input,switch_positions, expected_up, expected_down):
     root, e_in, switch, e_up, e_down, leaf_up, leaf_down = switch_config
-    switch.setSwitchState(switch_positions)
-    root.setState(root_input)
-    assert leaf_up.getState() == expected_up
-    assert leaf_down.getState() == expected_down
+    switch.select_switch_edges(switch_positions)
+    root.set_state(root_input)
+    assert leaf_up.state == expected_up
+    assert leaf_down.state == expected_down

@@ -4,7 +4,7 @@
         _type_: _description_
     """
 from enum import Enum
-from typing import Dict, Self, Deque
+from typing import Dict, Self, Deque, override
 from abc import ABC, abstractmethod
 from itertools import count
 from collections import deque
@@ -75,7 +75,7 @@ class StateObj(ABC):
         Returns:
             str: class name + id
         """
-        return self.bool_id
+        return self._bool_id
 
     @property
     def state(self) -> bool:
@@ -92,7 +92,7 @@ class StateObj(ABC):
         """
         input_states = {}
         for i in self._input_objs:
-            input_states[i.getBoolId()] = i.getState()
+            input_states[i.bool_id] = i.state
         self._state = self._bool_expr.evaluate(**input_states)
 
     def update_ouputs(self):
@@ -162,11 +162,11 @@ class Edge(StateObj):
 
     def generate_bool_expr(self):
         assert self._input_objs
-        self._bool_expr = BooleanExpression(self._input_objs[0].getBoolId())
+        self._bool_expr = BooleanExpression(self._input_objs[0].bool_id)
 
     def calculate_state(self):
         assert self._input_objs
-        input_states = {self._input_objs[0].getBoolId(): self._input_objs[0].getState()}
+        input_states = {self._input_objs[0].bool_id: self._input_objs[0].state}
         self._state = self._bool_expr.evaluate(**input_states) & self._selected
 
 class ORNode(StateObj):
@@ -176,9 +176,9 @@ class ORNode(StateObj):
     def __init__(self):
         super().__init__()
         self._node_type = NodeType.OR
-
+    
     def generate_bool_expr(self):
-        parts = " OR ".join(obj.getBoolId() for obj in self._input_objs)
+        parts = " OR ".join(obj.bool_id for obj in self._input_objs)
         self._bool_expr = BooleanExpression(parts)
 
 class ANDNode(StateObj):
@@ -191,7 +191,7 @@ class ANDNode(StateObj):
 
 
     def generate_bool_expr(self):
-        parts = " AND ".join(obj.getBoolId() for obj in self._input_objs)
+        parts = " AND ".join(obj.bool_id for obj in self._input_objs)
         self._bool_expr = BooleanExpression(parts)
 
 
@@ -218,9 +218,9 @@ class NOTNode(StateObj):
         else:
             self._input_objs[0] = i
 
-
+    @override
     def generate_bool_expr(self):
-        parts = " NOT ".join(obj.getBoolId() for obj in self._input_objs)
+        parts = f" NOT {self._input_objs[0].bool_id}"
         self._bool_expr = BooleanExpression(parts)
 
 
@@ -246,7 +246,7 @@ class SwitchNode(StateObj):
         return super().__repr__() + f"\n Switch Selection?: {self._switch_selection}"
 
     def generate_bool_expr(self):
-        parts = " OR ".join(obj.getBoolId() for obj in self._input_objs)
+        parts = " OR ".join(obj.bool_id for obj in self._input_objs)
         self._bool_expr = BooleanExpression(parts)
 
 
@@ -260,9 +260,9 @@ class SwitchNode(StateObj):
         Raises:
             KeyError: If the indicies are not valid indicies (i.e. that output edge does not exist)
         """
-        unknown = set(edge_indicies) - set(self._switch_selection)
-        if unknown:
-            raise KeyError(f"Unknown edges: {unknown}")
+        
+        if edge_indicies.keys() <= self._switch_selection.keys():
+            raise KeyError(f"Unknown edges: {edge_indicies.keys() - self._switch_selection.keys()}! Valid edges are: {set(edge_indicies)}")
         for k,v in edge_indicies.items():
             assert isinstance(v, bool)
             self._switch_selection[k] = v
@@ -286,7 +286,7 @@ class RootNode(StateObj):
         pass
 
     def generate_bool_expr(self):
-        self._bool_expr = BooleanExpression(self.bool_id())
+        self._bool_expr = BooleanExpression(self.bool_id)
 
     def calculate_state(self):
         pass
@@ -327,5 +327,5 @@ class LeafNode(ANDNode):
         pass
 
     def generate_bool_expr(self):
-        parts = " OR ".join(obj.getBoolId() for obj in self._input_objs)
+        parts = " OR ".join(obj.bool_id for obj in self._input_objs)
         self._bool_expr = BooleanExpression(parts)
