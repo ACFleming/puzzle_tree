@@ -13,20 +13,20 @@ from puzzle_tree.node_logic import (
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 @pytest.fixture
 def root_edge_leaf():
-    r = RootNode("D")
-    e = Edge("E")
-    l = LeafNode("S")
+    r = RootNode()
+    e = Edge()
+    l = LeafNode()
     StateObj.connect(r, e)
     StateObj.connect(e, l)
     return r, e, l
 
 @pytest.fixture
 def or_config():
-    r1, r2 = RootNode("R1"), RootNode("R2")
+    r1, r2 = RootNode(), RootNode()
     e1, e2 = Edge(), Edge()
     or_node = ORNode()
     e3 = Edge()
-    leaf = LeafNode("L")
+    leaf = LeafNode()
     StateObj.connect(r1, e1); StateObj.connect(r2, e2)
     StateObj.connect(e1, or_node); StateObj.connect(e2, or_node)
     StateObj.connect(or_node, e3); StateObj.connect(e3, leaf)
@@ -34,11 +34,11 @@ def or_config():
 
 @pytest.fixture
 def and_config():
-    r1, r2 = RootNode("R1"), RootNode("R2")
+    r1, r2 = RootNode(), RootNode()
     e1, e2 = Edge(), Edge()
     and_node = ANDNode()
     e3 = Edge()
-    leaf = LeafNode("L")
+    leaf = LeafNode()
     StateObj.connect(r1, e1); StateObj.connect(r2, e2)
     StateObj.connect(e1, and_node); StateObj.connect(e2, and_node)
     StateObj.connect(and_node, e3); StateObj.connect(e3, leaf)
@@ -48,8 +48,8 @@ def and_config():
 def not_config():
     r = RootNode()
     e1, e2 = Edge(), Edge()
-    not_node = NOTNode("N")
-    leaf_node = LeafNode("L")
+    not_node = NOTNode()
+    leaf_node = LeafNode()
     StateObj.connect(r, e1)
     StateObj.connect(e1, not_node)
     StateObj.connect(not_node, e2)
@@ -61,7 +61,7 @@ def switch_config():
     root = RootNode()
     e_in   = Edge()
     switch = SwitchNode()
-    e_up, e_down       = Edge("up"), Edge("down")
+    e_up, e_down       = Edge(), Edge()
     leaf_up, leaf_down = LeafNode(), LeafNode()
     StateObj.connect(root, e_in)
     StateObj.connect(e_in, switch)

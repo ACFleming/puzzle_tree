@@ -15,3 +15,9 @@ With dev for testing
 ```
 pip install -e ".[dev]"
 ```
+
+To run tests
+
+```
+pytest -v
+```

@@ -33,7 +33,7 @@ import os
 import random                                        
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
-from puzzle_tree.graph_geometry import _point_to_segment_dist,_rect_edge_point 
+from puzzle_tree.ui.geometry_helper import _point_to_segment_dist,_rect_edge_point 
 # FIX: removed unused 'colorchooser' import
 
 # ── Node type definitions ─────────────────────────────────────────────────────

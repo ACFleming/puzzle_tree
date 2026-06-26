@@ -1,4 +1,4 @@
-from puzzle_tree.ui import PuzzlePlotter
+from puzzle_tree.ui.ui import PuzzlePlotter
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 

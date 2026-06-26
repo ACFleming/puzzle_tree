@@ -5,8 +5,19 @@ from abc import ABC, abstractmethod
 from itertools import count
 from collections import deque
 import logging
+from enum import Enum, auto
 from puzzle_tree.defs import CONNECTIONS_LIMIT
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+
+class NodeTypes(Enum):
+    ROOT = 1
+    EDGE = 2
+    LEAF = 3
+    AND = 4
+    OR = 5
+    NOT = 6
+    SWITCH = 7
+    ERROR = 8
 
 
 
@@ -21,32 +32,31 @@ class StateObj(ABC):
         output_obj.update()
 
     _id_counter = count(0)
-    def __init__(self, label:str = "",state: bool = False):
-        self.id = next(StateObj._id_counter)
-        self.bool_id = f"{self.__class__.__name__}_{self.id}"
-        self.label = label
-        self.state = state
-        self.input_objs : Deque[StateObj] = deque(maxlen=CONNECTIONS_LIMIT)
-        self.output_objs : Deque[StateObj] = deque(maxlen=CONNECTIONS_LIMIT)
-        self.bool_expr = BooleanExpression("NULL")
+    def __init__(self):
+        self._id = next(StateObj._id_counter)
+        self._bool_id = f"{self.__class__.__name__}_{self._id}"
+        self._state = False
+        self._input_edges : Deque[StateObj] = deque(maxlen=CONNECTIONS_LIMIT)
+        self._output_edges : Deque[StateObj] = deque(maxlen=CONNECTIONS_LIMIT)
+        self._bool_expr = BooleanExpression("NULL")
     
     def __repr__(self):
-        return f"{self.bool_id}: \n Label: {self.label} \n State: {self.state} \n Expression: {self.bool_expr} \n Inputs: {[n.bool_id for n in self.input_objs]} \n Outputs: {[n.bool_id for n in self.output_objs]}"
+        return f"{self._bool_id}: \n State: {self._state} \n Expression: {self._bool_expr} \n Inputs: {[n.bool_id for n in self._input_edges]} \n Outputs: {[n.bool_id for n in self._output_edges]}"
 
     def getBoolId(self):
-        return self.bool_id
+        return self._bool_id
 
     def getState(self):
-        return self.state
+        return self._state
 
     def calculateState(self):
         input_states = {}
-        for i in self.input_objs:
+        for i in self._input_edges:
             input_states[i.getBoolId()] = i.getState()
-        self.state = self.bool_expr.evaluate(**input_states)
+        self._state = self._bool_expr.evaluate(**input_states)
 
     def powerOutputs(self):
-        for out in self.output_objs:
+        for out in self._output_edges:
             out.update()
             
     def isConnected(self):
@@ -59,16 +69,16 @@ class StateObj(ABC):
         
 
     def isOn(self):
-        return self.state
+        return self._state
         
     def isOff(self):
         return not self.isOn()
     
     def add_output(self, o:Self):
-        self.output_objs.append(o)
+        self._output_edges.append(o)
 
     def add_input(self, i:Self):
-        self.input_objs.append(i)
+        self._input_edges.append(i)
 
     @abstractmethod
     def generateBooleanExpression(self):
@@ -76,114 +86,83 @@ class StateObj(ABC):
 
 
 class Edge(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
-        self.input_objs = deque(maxlen=1)
-        self.output_objs = deque(maxlen=1)
+    def __init__(self):
+        super().__init__()
+        self._input_edges = deque(maxlen=1)
+        self._output_edges = deque(maxlen=1)
         self._selected = True
 
 
     def __repr__(self):
         return super().__repr__() + f"\n Selected?: {self._selected}"
-    
-    # def add_output(self, o):
-    #     if len(self.output_objs) == 0:
-    #         self.output_objs.append(o)
-    #     else:
-    #         self.output_objs[0] = o 
-            
-    # def add_input(self, i:Self):
-    #     if len(self.input_objs) == 0:
-    #         self.input_objs.append(i)
-            
-    #     else:
-    #         self.input_objs[0] = i
 
     def generateBooleanExpression(self):
-        assert self.input_objs
-        self.bool_expr = BooleanExpression(self.input_objs[0].getBoolId())
+        assert self._input_edges
+        self._bool_expr = BooleanExpression(self._input_edges[0].getBoolId())
 
     def calculateState(self):
-        assert self.input_objs
-        input_states = {self.input_objs[0].getBoolId(): self.input_objs[0].getState()}
-        self.state = self.bool_expr.evaluate(**input_states) & self._selected
+        assert self._input_edges
+        input_states = {self._input_edges[0].getBoolId(): self._input_edges[0].getState()}
+        self._state = self._bool_expr.evaluate(**input_states) & self._selected
 
         
 class ORNode(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
-
-    # def add_output(self, o):
-    #     self.output_objs.append(o)
-
-    # def add_input(self, i):
-    #     self.input_objs.append(i)
+    def __init__(self):
+        super().__init__()
 
     def generateBooleanExpression(self):
-        self.bool_expr = BooleanExpression(" OR ".join(obj.getBoolId() for obj in self.input_objs))
+        self._bool_expr = BooleanExpression(" OR ".join(obj.getBoolId() for obj in self._input_edges))
 
 
 
 class ANDNode(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
+    def __init__(self):
+        super().__init__()
 
-
-    # def add_output(self, o):
-    #     self.output_objs.append(o)
-
-    # def add_input(self, i):
-    #     self.input_objs.append(i)
 
     def generateBooleanExpression(self):
-        self.bool_expr = BooleanExpression(" AND ".join(obj.getBoolId() for obj in self.input_objs))
+        self._bool_expr = BooleanExpression(" AND ".join(obj.getBoolId() for obj in self._input_edges))
 
 
 class NOTNode(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
-        self.input_objs = deque(maxlen=1)
-        self.output_objs = deque(maxlen=1)
+    def __init__(self):
+        super().__init__()
+        self._input_edges = deque(maxlen=1)
+        self._output_edges = deque(maxlen=1)
 
     def add_output(self, o):
-        if len(self.output_objs) == 0:
-            self.output_objs.append(o)
+        if len(self._output_edges) == 0:
+            self._output_edges.append(o)
         else:
-            self.output_objs[0] = o
+            self._output_edges[0] = o
             
     def add_input(self, i:Self):
-        if len(self.input_objs) == 0:
-            self.input_objs.append(i)
+        if len(self._input_edges) == 0:
+            self._input_edges.append(i)
             
         else:
-            self.input_objs[0] = i
+            self._input_edges[0] = i
             
 
     def generateBooleanExpression(self):
-        self.bool_expr = BooleanExpression(f"NOT {self.input_objs[0].getBoolId()}")
+        self._bool_expr = BooleanExpression(f"NOT {self._input_edges[0].getBoolId()}")
 
 
 class SwitchNode(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
-        self.input_objs = deque(maxlen=1)
+    def __init__(self):
+        super().__init__()
+        self._input_edges = deque(maxlen=1)
         self.switch_selection: dict[int, bool] = {}
 
     def add_output(self, o):
         super().add_output(o)
         self.switch_selection[o] = False
-    
-    # def add_input(self, i:Self):
-    #     if len(self.input_objs) == 0:
-    #         self.input_objs.append(i)
-    #     else:
-    #         self.input_objs[0] = i
 
     def __repr__(self):
         return super().__repr__() + f"\n Switch Selection?: {self.switch_selection}"
 
     def generateBooleanExpression(self):
-        self.bool_expr = BooleanExpression(self.input_objs[0].getBoolId())
+        self._bool_expr = BooleanExpression(self._input_edges[0].getBoolId())
 
     def switchOn(self, on_indicies:List[int]):
         self.setSwitchState(dict.fromkeys(on_indicies, True))
@@ -194,7 +173,7 @@ class SwitchNode(StateObj):
     def setSwitchState(self, edge_indicies: Dict[int, bool]):
         for k,v in edge_indicies.items():
             self.switch_selection[k] = v
-            e = self.output_objs[k]
+            e = self._output_edges[k]
             assert isinstance(e,Edge)
             # Only the switch function is allowed to select or deslect edges
             e._selected = v
@@ -202,27 +181,25 @@ class SwitchNode(StateObj):
 
 
 class RootNode(StateObj):
-    def __init__(self, label:str = "", state: bool = False):
-        super().__init__(label, state)
+    def __init__(self):
+        super().__init__()
 
-    # def add_output(self, o):
-    #     self.output_objs.append(o)
             
     def add_input(self, i:Self):
         pass        
 
     def generateBooleanExpression(self):
-        self.bool_expr = BooleanExpression(self.getBoolId())
+        self._bool_expr = BooleanExpression(self.getBoolId())
 
     def calculateState(self):
         pass
 
     def on(self):
-        self.state = True
+        self._state = True
         self.powerOutputs()
 
     def off(self):
-        self.state = False
+        self._state = False
         self.powerOutputs()
 
     def setState(self,b:bool):
@@ -230,18 +207,13 @@ class RootNode(StateObj):
 
 
 class LeafNode(ANDNode):
-    def __init__(self, label:str = "",state: bool = False):
-        super().__init__(label, state)
-        self.input_objs = deque(maxlen=1)
+    def __init__(self):
+        super().__init__()
+        self._input_edges = deque(maxlen=1)
 
     def add_output(self, o):
         pass
     
-    # def add_input(self, i:Self):
-    #     if len(self.input_objs) == 0:
-    #         self.input_objs.append(i)
-    #     else:
-    #         self.input_objs[0] = i
 
 
 if __name__ == "__main__":
@@ -325,4 +297,3 @@ if __name__ == "__main__":
             print(f"{state1} with Switch {switch_node.getState()} Down {down_edge.connected} --> Down is {down_node.getState()}")
     
 
-    StateObj.connect
