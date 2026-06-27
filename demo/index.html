@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>puzzle_tree demo</title>
+        <link
+            rel="stylesheet"
+            href="https://pyscript.net/releases/2025.11.1/core.css"
+        />
+        <script
+            type="module"
+            src="https://pyscript.net/releases/2025.11.1/core.js"
+        ></script>
+    </head>
+    <body>
+        <pre id="output"></pre>
+
+        <script
+            type="py"
+            config='{"files": {"./nodes.py": "nodes.py", "./defs.py": "puzzle_tree/defs.py"}}'
+        >
+            import sys
+            sys.path.insert(0, ".")
+
+            from nodes import StateObj, RootNode, ORNode, ANDNode, NOTNode, Edge, LeafNode
+            from pyscript import document
+
+            # Build a simple tree: Root -> Edge -> OR -> Edge -> Leaf
+            r1 = RootNode()
+            r2 = RootNode()
+            e1 = Edge()
+            e2 = Edge()
+            o  = ORNode()
+            e3 = Edge()
+            l  = LeafNode()
+
+            StateObj.connect(r1, e1)
+            StateObj.connect(r2, e2)
+            StateObj.connect(e1, o)
+            StateObj.connect(e2, o)
+            StateObj.connect(o,  e3)
+            StateObj.connect(e3, l)
+
+            # Test it
+            r1.off(); r2.off()
+            out = f"r1=F r2=F → leaf={l.state}\n"
+
+            r1.on()
+            out += f"r1=T r2=F → leaf={l.state}\n"
+
+            r2.on()
+            out += f"r1=T r2=T → leaf={l.state}\n"
+
+            r1.off()
+            out += f"r1=F r2=T → leaf={l.state}\n"
+
+            document.getElementById("output").textContent = out
+        </script>
+    </body>
+</html>

@@ -1,0 +1,3 @@
+"""DEFINTIONS
+    """
+CONNECTIONS_LIMIT = 10
