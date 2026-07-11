@@ -44,3 +44,16 @@ puzzle_tree/
 ├── package.json ← project config + dependency list
 ├── tsconfig.json ← TypeScript config
 └── vite.config.ts ← Vite config
+
+
+
+You need to install node 
+
+check `npm -v` 
+
+then run `npm install . `
+This installs locally
+
+Then run `npm run dev`
+
+

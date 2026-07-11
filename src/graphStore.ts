@@ -7,27 +7,27 @@ import {
     useKeyPress,
 } from "@xyflow/react";
 import {
-    StateObj,
+    TreeObj,
     RootNode,
     ORNode,
     ANDNode,
     NOTNode,
     SwitchNode,
     LeafNode,
-    Edge as ModelEdge,
-} from "./nodeModel";
+    Edge as TreeEdge,
+} from "./nodeLogic";
 import type { FlowNode, FlowEdge, NodeData, EdgeData } from "./types";
 
 // ── Store shape ───────────────────────────────────────────────────────────────
 
 type GraphStore = {
     /** React Flow display data */
-    nodes: FlowNode[];
-    edges: FlowEdge[];
+    displayNodes: FlowNode[];
+    displayEdges: FlowEdge[];
 
-    /** Live model instances keyed by their numeric id */
-    modelNodes: Map<number, StateObj>;
-    modelEdges: Map<string, ModelEdge>;
+    /** Live tree instances keyed by their numeric id */
+    treeNodes: Map<number, TreeObj>;
+    treeEdges: Map<string, TreeEdge>;
 
     /** React Flow change handlers */
     onNodesChange: (changes: NodeChange<FlowNode>[]) => void;
@@ -52,11 +52,11 @@ type GraphStore = {
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 /**
- * Converts a StateObj instance into a React Flow node object.
+ * Converts a TreeObj instance into a React Flow node object.
  * Called when adding a node and when syncing state back to the canvas.
  */
 function toFlowNode(
-    model: StateObj,
+    model: TreeObj,
     position: { x: number; y: number },
 ): FlowNode {
     return {
@@ -75,31 +75,33 @@ function toFlowNode(
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useGraphStore = create<GraphStore>((set, get) => ({
-    nodes: [],
-    edges: [],
-    modelNodes: new Map(),
-    modelEdges: new Map(),
+    displayNodes: [],
+    displayEdges: [],
+    treeNodes: new Map(),
+    treeEdges: new Map(),
 
     onNodesChange: (changes: NodeChange<FlowNode>[]) => {
-        set((s) => ({ nodes: applyNodeChanges<FlowNode>(changes, s.nodes) }));
+        set((s) => ({ displayNodes: applyNodeChanges<FlowNode>(changes, s.displayNodes) }));
     },
 
     onEdgesChange: (changes: EdgeChange<FlowEdge>[]) => {
-        set((s) => ({ edges: applyEdgeChanges<FlowEdge>(changes, s.edges) }));
+        set((s) => ({ displayEdges: applyEdgeChanges<FlowEdge>(changes, s.displayEdges) }));
     },
 
     /**
      * Creates a new model node of the given type and adds it to the canvas.
      */
     addNode: (nodeType, position) => {
-        const model = createModelNode(nodeType);
-        if (!model) return;
-
-        const flowNode = toFlowNode(model, position);
-
+        
+        const logicNode = createLogicNode(nodeType);
+       
+        if (!logicNode) return;
+        console.log(`HERE ${logicNode.id}`)
+        const flowNode = toFlowNode(logicNode, position);
+        console.log(`HERE ${flowNode.position.x}`)
         set((s) => ({
-            modelNodes: new Map(s.modelNodes).set(model.id, model),
-            nodes: [...s.nodes, flowNode],
+            treeNodes: new Map(s.treeNodes).set(logicNode.id, logicNode),
+            displayNodes: [...s.displayNodes, flowNode],
         }));
     },
 
@@ -108,12 +110,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      * Also removes any edges connected to it.
      */
     removeNode: (modelId) => {
-        const { modelEdges } = get();
+        const { treeEdges } = get();
 
         // find all edges connected to this node
-        const edgeIdsToRemove = Array.from(modelEdges.keys()).filter(
+        const edgeIdsToRemove = Array.from(treeEdges.keys()).filter(
             (edgeId) => {
-                const flowEdge = get().edges.find((e) => e.id === edgeId);
+                const flowEdge = get().displayEdges.find((e) => e.id === edgeId);
                 return (
                     flowEdge?.source === String(modelId) ||
                     flowEdge?.target === String(modelId)
@@ -122,18 +124,18 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         );
 
         set((s) => ({
-            modelNodes: (() => {
-                const next = new Map(s.modelNodes);
+            treeNodes: (() => {
+                const next = new Map(s.treeNodes);
                 next.delete(modelId);
                 return next;
             })(),
-            modelEdges: (() => {
-                const next = new Map(s.modelEdges);
+            treeEdges: (() => {
+                const next = new Map(s.treeEdges);
                 edgeIdsToRemove.forEach((id) => next.delete(id));
                 return next;
             })(),
-            nodes: s.nodes.filter((n) => n.id !== String(modelId)),
-            edges: s.edges.filter((e) => !edgeIdsToRemove.includes(e.id)),
+            displayNodes: s.displayNodes.filter((n) => n.id !== String(modelId)),
+            displayEdges: s.displayEdges.filter((e) => !edgeIdsToRemove.includes(e.id)),
         }));
     },
 
@@ -142,12 +144,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      */
     removeEdge: (edgeId) => {
         set((s) => ({
-            modelEdges: (() => {
-                const next = new Map(s.modelEdges);
+            treeEdges: (() => {
+                const next = new Map(s.treeEdges);
                 next.delete(edgeId);
                 return next;
             })(),
-            edges: s.edges.filter((e) => e.id !== edgeId),
+            displayEdges: s.displayEdges.filter((e) => e.id !== edgeId),
         }));
         get().syncState();
     },
@@ -158,16 +160,16 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      * nodes — the Edge is created automatically between them.
      */
     connectNodes: (sourceModelId, targetModelId) => {
-        const { modelNodes, modelEdges } = get();
-        const source = modelNodes.get(sourceModelId);
-        const target = modelNodes.get(targetModelId);
+        const { treeNodes, treeEdges } = get();
+        const source = treeNodes.get(sourceModelId);
+        const target = treeNodes.get(targetModelId);
         if (!source || !target) return;
 
-        const edge = new ModelEdge();
-        StateObj.connect(source, edge);
-        StateObj.connect(edge, target);
+        const edge = new TreeEdge();
+        TreeObj.connect(source, edge);
+        TreeObj.connect(edge, target);
 
-        const edgeId = `e-${source.id}-${target.id}`;
+        const edgeId = `${edge.boolId}-${source.id}-${target.id}`;
         const isSwitchSource = source instanceof SwitchNode;
         const flowEdge: FlowEdge = {
             id: edgeId,
@@ -177,8 +179,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         };
 
         set((s) => ({
-            modelEdges: new Map(s.modelEdges).set(edgeId, edge),
-            edges: [...s.edges, flowEdge],
+            treeEdges: new Map(s.treeEdges).set(edgeId, edge),
+            displayEdges: [...s.displayEdges, flowEdge],
         }));
 
         get().syncState();
@@ -188,8 +190,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      * Toggles a RootNode between on and off, then syncs state to the canvas.
      */
     toggleRoot: (modelId) => {
-        const { modelNodes } = get();
-        const model = modelNodes.get(modelId);
+        const { treeNodes } = get();
+        const model = treeNodes.get(modelId);
         if (!(model instanceof RootNode)) return;
         model.setState(!model.state);
         get().syncState();
@@ -200,18 +202,18 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      * current boolean states. This is what causes nodes to change colour.
      */
     syncState: () => {
-        const { modelNodes, modelEdges } = get();
+        const { treeNodes, treeEdges } = get();
         set((s) => ({
-            nodes: s.nodes.map((flowNode) => {
-                const model = modelNodes.get(Number(flowNode.id));
+            displayNodes: s.displayNodes.map((flowNode) => {
+                const model = treeNodes.get(Number(flowNode.id));
                 if (!model) return flowNode;
                 return {
                     ...flowNode,
                     data: { ...flowNode.data, state: model.state },
                 };
             }),
-            edges: s.edges.map((flowEdge) => {
-                const model = modelEdges.get(flowEdge.id);
+            displayEdges: s.displayEdges.map((flowEdge) => {
+                const model = treeEdges.get(flowEdge.id);
                 if (!model) return flowEdge;
                 const active = model.state;
                 return {
@@ -236,10 +238,10 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
      * Toggles the selected state of a specific output edge on a SwitchNode.
      */
     selectEdge: (switchModelId, edgeModelId, selected) => {
-        const { modelNodes, modelEdges } = get();
-        const sw = modelNodes.get(switchModelId);
-        const edge = modelEdges.get(edgeModelId);
-        if (!(sw instanceof SwitchNode) || !(edge instanceof ModelEdge)) return;
+        const { treeNodes, treeEdges } = get();
+        const sw = treeNodes.get(switchModelId);
+        const edge = treeEdges.get(edgeModelId);
+        if (!(sw instanceof SwitchNode) || !(edge instanceof TreeEdge)) return;
 
         sw.selectEdges(new Map([[edge, selected]]));
         edge.update();
@@ -250,9 +252,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 // ── Factory ───────────────────────────────────────────────────────────────────
 
 /**
- * Creates the correct StateObj subclass for a given node type string.
+ * Creates the correct TreeObj subclass for a given node type string.
  */
-function createModelNode(nodeType: string): StateObj | null {
+function createLogicNode(nodeType: string): TreeObj | null {
     switch (nodeType) {
         case "RootNode":
             return new RootNode();

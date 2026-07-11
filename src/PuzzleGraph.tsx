@@ -47,8 +47,8 @@ const nodeTypes = {
 };
 
 export default function PuzzleGraph() {
-    const nodes = useGraphStore((s) => s.nodes);
-    const edges = useGraphStore((s) => s.edges);
+    const nodes = useGraphStore((s) => s.displayNodes);
+    const edges = useGraphStore((s) => s.displayEdges);
     const onNodesChange = useGraphStore((s) => s.onNodesChange);
     const onEdgesChange = useGraphStore((s) => s.onEdgesChange);
     const connectNodes = useGraphStore((s) => s.connectNodes);
@@ -68,26 +68,6 @@ export default function PuzzleGraph() {
         });
         onEdgesChange(changes.filter((c) => c.type !== "remove"));
     };
-
-    // const handleNodesChange = useCallback(
-    //     (changes: NodeChange<FlowNode>[]) => {
-    //         changes.forEach((change) => {
-    //             if (change.type === "remove") removeNode(Number(change.id));
-    //         });
-    //         onNodesChange(changes.filter((c) => c.type !== "remove"));
-    //     },
-    //     [onNodesChange, removeNode],
-    // );
-
-    // const handleEdgesChange = useCallback(
-    //     (changes: EdgeChange<FlowEdge>[]) => {
-    //         changes.forEach((change) => {
-    //             if (change.type === "remove") removeEdge(change.id);
-    //         });
-    //         onEdgesChange(changes.filter((c) => c.type !== "remove"));
-    //     },
-    //     [onEdgesChange, removeEdge],
-    // );
 
     const isValidConnection: IsValidConnection<FlowEdge> = useCallback(
         (connection) => {

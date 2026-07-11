@@ -2,7 +2,7 @@ import type { Node, Edge } from "@xyflow/react";
 
 /**
  * Data payload attached to every React Flow node.
- * modelId links the canvas node back to its StateObj instance.
+ * modelId links the canvas node back to its TreeObj instance.
  */
 export type NodeData = {
     label: string;

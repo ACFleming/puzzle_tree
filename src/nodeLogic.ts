@@ -1,5 +1,5 @@
 /**
- * node_model.ts
+ * nodeLogic.ts
  *
  * Core logic for the puzzle_tree node graph.
  * Each node type represents a boolean logic gate. Nodes are connected via
@@ -29,17 +29,17 @@ export const NodeType = {
 
 export type NodeType = (typeof NodeType)[keyof typeof NodeType];
 
-// ── StateObj ──────────────────────────────────────────────────────────────────
+// ── TreeObj ──────────────────────────────────────────────────────────────────
 
-/** Module-level ID counter, incremented for each new StateObj instance. */
+/** Module-level ID counter, incremented for each new TreeObj instance. */
 let _idCounter = 0;
 
 /**
  * Abstract base class for all nodes and edges in the graph.
- * Each StateObj has a boolean state that is calculated from its inputs,
+ * Each TreeObj has a boolean state that is calculated from its inputs,
  * and propagates that state to its outputs when updated.
  */
-export abstract class StateObj {
+export abstract class TreeObj {
     /** Unique numeric ID for this instance. */
     readonly id: number;
 
@@ -53,10 +53,10 @@ export abstract class StateObj {
     protected _state: boolean = false;
 
     /** Nodes/edges feeding into this node. */
-    protected _inputObjs: StateObj[] = [];
+    protected _inputObjs: TreeObj[] = [];
 
     /** Nodes/edges this node feeds into. */
-    protected _outputObjs: StateObj[] = [];
+    protected _outputObjs: TreeObj[] = [];
 
     constructor() {
         this.id = _idCounter++;
@@ -69,13 +69,13 @@ export abstract class StateObj {
     }
 
     /**
-     * Connects an input StateObj to an output StateObj via an Edge.
+     * Connects an input TreeObj to an output TreeObj via an Edge.
      * Exactly one of the two arguments must be an Edge.
      *
      * @param input - the upstream node or edge
      * @param output - the downstream node or edge
      */
-    static connect(input: StateObj, output: StateObj): void {
+    static connect(input: TreeObj, output: TreeObj): void {
         const inputIsEdge = input instanceof Edge;
         const outputIsEdge = output instanceof Edge;
         console.assert(
@@ -90,18 +90,18 @@ export abstract class StateObj {
 
     /**
      * Adds an output connection. Subclasses may override to enforce max connections.
-     * @param output - the downstream StateObj to add
+     * @param output - the downstream TreeObj to add
      */
-    addOutput(output: StateObj): void {
+    addOutput(output: TreeObj): void {
         if (this._outputObjs.length < CONNECTIONS_LIMIT)
             this._outputObjs.push(output);
     }
 
     /**
      * Adds an input connection. Subclasses may override to enforce max connections.
-     * @param input - the upstream StateObj to add
+     * @param input - the upstream TreeObj to add
      */
-    addInput(input: StateObj): void {
+    addInput(input: TreeObj): void {
         if (this._inputObjs.length < CONNECTIONS_LIMIT)
             this._inputObjs.push(input);
     }
@@ -145,7 +145,7 @@ export abstract class StateObj {
  * Edges have a selected state controlled by SwitchNode.
  * When not selected, state does not propagate (always false).
  */
-export class Edge extends StateObj {
+export class Edge extends TreeObj {
     readonly nodeType = NodeType.EDGE;
 
     /** Whether this edge is active and will propagate state. */
@@ -165,12 +165,12 @@ export class Edge extends StateObj {
     }
 
     /** Enforces max 1 input. */
-    override addInput(i: StateObj): void {
+    override addInput(i: TreeObj): void {
         this._inputObjs = [i];
     }
 
     /** Enforces max 1 output. */
-    override addOutput(o: StateObj): void {
+    override addOutput(o: TreeObj): void {
         this._outputObjs = [o];
     }
 
@@ -187,7 +187,7 @@ export class Edge extends StateObj {
  * OR gate. State is true if one or more input edges are true.
  * Accepts multiple inputs, one output.
  */
-export class ORNode extends StateObj {
+export class ORNode extends TreeObj {
     readonly nodeType = NodeType.OR;
 
     /** True if any input is true. */
@@ -202,7 +202,7 @@ export class ORNode extends StateObj {
  * AND gate. State is true only if all input edges are true.
  * Accepts multiple inputs, one output.
  */
-export class ANDNode extends StateObj {
+export class ANDNode extends TreeObj {
     readonly nodeType = NodeType.AND;
 
     /** True only if all inputs are true (and at least one exists). */
@@ -218,16 +218,16 @@ export class ANDNode extends StateObj {
  * NOT gate. State is the inverse of its single input.
  * Accepts exactly 1 input and 1 output.
  */
-export class NOTNode extends StateObj {
+export class NOTNode extends TreeObj {
     readonly nodeType = NodeType.NOT;
 
     /** Enforces max 1 input. */
-    override addInput(i: StateObj): void {
+    override addInput(i: TreeObj): void {
         this._inputObjs = [i];
     }
 
     /** Enforces max 1 output. */
-    override addOutput(o: StateObj): void {
+    override addOutput(o: TreeObj): void {
         this._outputObjs = [o];
     }
 
@@ -247,14 +247,14 @@ export class NOTNode extends StateObj {
  * Its primary role is controlling which of its output edges are selected
  * (active), allowing selective state propagation downstream.
  */
-export class SwitchNode extends StateObj {
+export class SwitchNode extends TreeObj {
     readonly nodeType = NodeType.SWITCH;
 
     /** Maps each output Edge to whether it is currently selected. */
     private _switchSelection: Map<Edge, boolean> = new Map();
 
     /** Enforces max 1 input. */
-    override addInput(i: StateObj): void {
+    override addInput(i: TreeObj): void {
         this._inputObjs = [i];
     }
 
@@ -262,7 +262,7 @@ export class SwitchNode extends StateObj {
      * Adds an output edge, defaulting it to unselected.
      * Only Edges may be outputs of a SwitchNode.
      */
-    override addOutput(o: StateObj): void {
+    override addOutput(o: TreeObj): void {
         if (!(o instanceof Edge)) return;
         super.addOutput(o);
         o.setSelected(false);
@@ -304,11 +304,11 @@ export class SwitchNode extends StateObj {
  * A graph may have multiple roots.
  * Accepts no inputs.
  */
-export class RootNode extends StateObj {
+export class RootNode extends TreeObj {
     readonly nodeType = NodeType.ROOT;
 
     /** Roots accept no inputs — this is a no-op. */
-    override addInput(_i: StateObj): void {}
+    override addInput(_i: TreeObj): void {}
 
     /** State is set manually, not calculated. */
     override calculateState(): void {}
@@ -340,16 +340,16 @@ export class RootNode extends StateObj {
  * State is true if its single input edge is true.
  * Accepts exactly 1 input, no outputs.
  */
-export class LeafNode extends StateObj {
+export class LeafNode extends TreeObj {
     readonly nodeType = NodeType.LEAF;
 
     /** Enforces max 1 input. */
-    override addInput(i: StateObj): void {
+    override addInput(i: TreeObj): void {
         this._inputObjs = [i];
     }
 
     /** Leaves have no outputs — this is a no-op. */
-    override addOutput(_o: StateObj): void {}
+    override addOutput(_o: TreeObj): void {}
 
     /** True if the single input is true. */
     override calculateState(): void {

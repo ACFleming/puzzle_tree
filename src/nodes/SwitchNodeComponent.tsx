@@ -10,11 +10,11 @@ export default function SwitchNodeComponent({
     id: string;
 }) {
     const selectEdge = useGraphStore((s) => s.selectEdge);
-    const edges = useGraphStore((s) => s.edges);
+    const flowEdges = useGraphStore((s) => s.displayEdges);
     const state = data.state;
 
     /** Find all output edges from this switch node */
-    const outputEdges = edges.filter((e) => e.source === id);
+    const outputEdges = flowEdges.filter((e) => e.source === id);
 
     return (
         <div
