@@ -1,5 +1,8 @@
-import { Handle, Position } from "@xyflow/react";
+import { useState } from "react";
+import { Handle, Position} from "@xyflow/react";
 import type { NodeData } from "../types";
+import ContextMenu from "../ContextMenu";
+import { useGraphStore } from "../graphStore";
 
 type Props = {
     data: NodeData;
@@ -19,14 +22,23 @@ export default function BaseNode({
     hasOutput = true,
     onClick,
 }: Props) {
+    // null = menu closed. Otherwise, holds the screen coords to render it at.
+    const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+    const removeNode = useGraphStore((s) => s.removeNode);
     return (
         <div
             onClick={onClick}
+            onContextMenu={(e) =>{
+                    e.preventDefault()
+                    setMenuPos({ x: e.clientX, y: e.clientY });
+                } 
+            }
             style={{
                 padding: "8px 16px",
                 borderRadius: 8,
                 border: "2px solid",
-                borderColor: data.state ? "#22c55e" : "#94a3b8",
+                borderColor: menuPos ? "#007afd" : 
+                    data.state ? "#22c55e" : "#94a3b8",
                 background: data.state ? "#dcfce7" : "#f1f5f9",
                 minWidth: 80,
                 textAlign: "center",
@@ -48,6 +60,18 @@ export default function BaseNode({
             </div>
 
             {hasOutput && <Handle type="source" position={Position.Right} />}
+
+            {menuPos && (
+                <ContextMenu
+                    x={menuPos.x}
+                    y={menuPos.y}
+                    onClose={() => setMenuPos(null)}
+                    items={[
+                        { label: "Toggle state", onSelect: () => console.log("toggle") },
+                        { label: "Delete node", onSelect: () => console.log("TODO: Implement Delete") },
+                    ]}
+                />
+            )}
         </div>
     );
 }
