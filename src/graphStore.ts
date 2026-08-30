@@ -7,7 +7,7 @@ import {
     useKeyPress,
 } from "@xyflow/react";
 import {
-    TreeObj,
+    LogicObj,
     RootNode,
     ORNode,
     ANDNode,
@@ -26,7 +26,7 @@ type GraphStore = {
     displayEdges: FlowEdge[];
 
     /** Live tree instances keyed by their numeric id */
-    treeNodes: Map<number, TreeObj>;
+    treeNodes: Map<number, LogicObj>;
     treeEdges: Map<string, TreeEdge>;
 
     /** React Flow change handlers */
@@ -52,11 +52,11 @@ type GraphStore = {
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 /**
- * Converts a TreeObj instance into a React Flow node object.
+ * Converts a LogicObj instance into a React Flow node object.
  * Called when adding a node and when syncing state back to the canvas.
  */
 function toFlowNode(
-    model: TreeObj,
+    model: LogicObj,
     position: { x: number; y: number },
 ): FlowNode {
     return {
@@ -81,24 +81,27 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     treeEdges: new Map(),
 
     onNodesChange: (changes: NodeChange<FlowNode>[]) => {
-        set((s) => ({ displayNodes: applyNodeChanges<FlowNode>(changes, s.displayNodes) }));
+        set((s) => ({
+            displayNodes: applyNodeChanges<FlowNode>(changes, s.displayNodes),
+        }));
     },
 
     onEdgesChange: (changes: EdgeChange<FlowEdge>[]) => {
-        set((s) => ({ displayEdges: applyEdgeChanges<FlowEdge>(changes, s.displayEdges) }));
+        set((s) => ({
+            displayEdges: applyEdgeChanges<FlowEdge>(changes, s.displayEdges),
+        }));
     },
 
     /**
      * Creates a new model node of the given type and adds it to the canvas.
      */
     addNode: (nodeType, position) => {
-        
         const logicNode = createLogicNode(nodeType);
-       
+
         if (!logicNode) return;
-        console.log(`HERE ${logicNode.id}`)
+        console.log(`HERE ${logicNode.id}`);
         const flowNode = toFlowNode(logicNode, position);
-        console.log(`HERE ${flowNode.position.x}`)
+        console.log(`HERE ${flowNode.position.x}`);
         set((s) => ({
             treeNodes: new Map(s.treeNodes).set(logicNode.id, logicNode),
             displayNodes: [...s.displayNodes, flowNode],
@@ -115,7 +118,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         // find all edges connected to this node
         const edgeIdsToRemove = Array.from(treeEdges.keys()).filter(
             (edgeId) => {
-                const flowEdge = get().displayEdges.find((e) => e.id === edgeId);
+                const flowEdge = get().displayEdges.find(
+                    (e) => e.id === edgeId,
+                );
                 return (
                     flowEdge?.source === String(modelId) ||
                     flowEdge?.target === String(modelId)
@@ -134,8 +139,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 edgeIdsToRemove.forEach((id) => next.delete(id));
                 return next;
             })(),
-            displayNodes: s.displayNodes.filter((n) => n.id !== String(modelId)),
-            displayEdges: s.displayEdges.filter((e) => !edgeIdsToRemove.includes(e.id)),
+            displayNodes: s.displayNodes.filter(
+                (n) => n.id !== String(modelId),
+            ),
+            displayEdges: s.displayEdges.filter(
+                (e) => !edgeIdsToRemove.includes(e.id),
+            ),
         }));
     },
 
@@ -166,8 +175,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         if (!source || !target) return;
 
         const edge = new TreeEdge();
-        TreeObj.connect(source, edge);
-        TreeObj.connect(edge, target);
+        LogicObj.connect(source, edge);
+        LogicObj.connect(edge, target);
 
         const edgeId = `${edge.boolId}-${source.id}-${target.id}`;
         const isSwitchSource = source instanceof SwitchNode;
@@ -252,9 +261,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 // ── Factory ───────────────────────────────────────────────────────────────────
 
 /**
- * Creates the correct TreeObj subclass for a given node type string.
+ * Creates the correct LogicObj subclass for a given node type string.
  */
-function createLogicNode(nodeType: string): TreeObj | null {
+function createLogicNode(nodeType: string): LogicObj | null {
     switch (nodeType) {
         case "RootNode":
             return new RootNode();

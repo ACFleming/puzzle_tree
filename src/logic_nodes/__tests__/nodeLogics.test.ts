@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-    TreeObj,
+    LogicObj,
     Edge,
     RootNode,
     LeafNode,
@@ -8,20 +8,20 @@ import {
     ANDNode,
     NOTNode,
     SwitchNode,
-} from "./nodeLogic";
+} from "../index";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 /** Wire: Root → Edge → Node → Edge → Leaf and return all parts */
-function makeChain(middle: TreeObj) {
+function makeChain(middle: LogicObj) {
     const root = new RootNode();
     const e1 = new Edge();
     const e2 = new Edge();
     const leaf = new LeafNode();
-    TreeObj.connect(root, e1);
-    TreeObj.connect(e1, middle);
-    TreeObj.connect(middle, e2);
-    TreeObj.connect(e2, leaf);
+    LogicObj.connect(root, e1);
+    LogicObj.connect(e1, middle);
+    LogicObj.connect(middle, e2);
+    LogicObj.connect(e2, leaf);
     return { root, e1, middle, e2, leaf };
 }
 
@@ -61,8 +61,8 @@ describe("Edge", () => {
         const root = new RootNode();
         const edge = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(root, edge);
-        TreeObj.connect(edge, leaf);
+        LogicObj.connect(root, edge);
+        LogicObj.connect(edge, leaf);
         root.on();
         expect(edge.state).toBe(true);
     });
@@ -71,8 +71,8 @@ describe("Edge", () => {
         const root = new RootNode();
         const edge = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(root, edge);
-        TreeObj.connect(edge, leaf);
+        LogicObj.connect(root, edge);
+        LogicObj.connect(edge, leaf);
         edge.setSelected(false);
         root.on();
         expect(edge.state).toBe(false);
@@ -113,12 +113,12 @@ describe("ORNode", () => {
         const e2 = new Edge();
         const e3 = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(r1, e1);
-        TreeObj.connect(r2, e2);
-        TreeObj.connect(e1, or);
-        TreeObj.connect(e2, or);
-        TreeObj.connect(or, e3);
-        TreeObj.connect(e3, leaf);
+        LogicObj.connect(r1, e1);
+        LogicObj.connect(r2, e2);
+        LogicObj.connect(e1, or);
+        LogicObj.connect(e2, or);
+        LogicObj.connect(or, e3);
+        LogicObj.connect(e3, leaf);
         r1.on();
         r2.on();
         expect(leaf.state).toBe(true);
@@ -132,12 +132,12 @@ describe("ORNode", () => {
         const e2 = new Edge();
         const e3 = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(r1, e1);
-        TreeObj.connect(r2, e2);
-        TreeObj.connect(e1, or);
-        TreeObj.connect(e2, or);
-        TreeObj.connect(or, e3);
-        TreeObj.connect(e3, leaf);
+        LogicObj.connect(r1, e1);
+        LogicObj.connect(r2, e2);
+        LogicObj.connect(e1, or);
+        LogicObj.connect(e2, or);
+        LogicObj.connect(or, e3);
+        LogicObj.connect(e3, leaf);
         r1.on();
         r2.off();
         expect(leaf.state).toBe(true);
@@ -161,12 +161,12 @@ describe("ANDNode", () => {
         const e2 = new Edge();
         const e3 = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(r1, e1);
-        TreeObj.connect(r2, e2);
-        TreeObj.connect(e1, and);
-        TreeObj.connect(e2, and);
-        TreeObj.connect(and, e3);
-        TreeObj.connect(e3, leaf);
+        LogicObj.connect(r1, e1);
+        LogicObj.connect(r2, e2);
+        LogicObj.connect(e1, and);
+        LogicObj.connect(e2, and);
+        LogicObj.connect(and, e3);
+        LogicObj.connect(e3, leaf);
         r1.on();
         r2.off();
         expect(leaf.state).toBe(false);
@@ -180,12 +180,12 @@ describe("ANDNode", () => {
         const e2 = new Edge();
         const e3 = new Edge();
         const leaf = new LeafNode();
-        TreeObj.connect(r1, e1);
-        TreeObj.connect(r2, e2);
-        TreeObj.connect(e1, and);
-        TreeObj.connect(e2, and);
-        TreeObj.connect(and, e3);
-        TreeObj.connect(e3, leaf);
+        LogicObj.connect(r1, e1);
+        LogicObj.connect(r2, e2);
+        LogicObj.connect(e1, and);
+        LogicObj.connect(e2, and);
+        LogicObj.connect(and, e3);
+        LogicObj.connect(e3, leaf);
         r1.on();
         r2.on();
         expect(leaf.state).toBe(true);
@@ -219,12 +219,12 @@ describe("SwitchNode", () => {
         const eOut2 = new Edge();
         const leaf1 = new LeafNode();
         const leaf2 = new LeafNode();
-        TreeObj.connect(root, eIn);
-        TreeObj.connect(eIn, sw);
-        TreeObj.connect(sw, eOut1);
-        TreeObj.connect(sw, eOut2);
-        TreeObj.connect(eOut1, leaf1);
-        TreeObj.connect(eOut2, leaf2);
+        LogicObj.connect(root, eIn);
+        LogicObj.connect(eIn, sw);
+        LogicObj.connect(sw, eOut1);
+        LogicObj.connect(sw, eOut2);
+        LogicObj.connect(eOut1, leaf1);
+        LogicObj.connect(eOut2, leaf2);
         return { root, sw, eOut1, eOut2, leaf1, leaf2 };
     }
 
@@ -301,14 +301,14 @@ describe("state propagation", () => {
         const e3 = new Edge(),
             e4 = new Edge();
 
-        TreeObj.connect(root, e1);
-        TreeObj.connect(e1, or);
-        TreeObj.connect(or, e2);
-        TreeObj.connect(e2, and);
-        TreeObj.connect(r2, e3);
-        TreeObj.connect(e3, and);
-        TreeObj.connect(and, e4);
-        TreeObj.connect(e4, leaf);
+        LogicObj.connect(root, e1);
+        LogicObj.connect(e1, or);
+        LogicObj.connect(or, e2);
+        LogicObj.connect(e2, and);
+        LogicObj.connect(r2, e3);
+        LogicObj.connect(e3, and);
+        LogicObj.connect(and, e4);
+        LogicObj.connect(e4, leaf);
 
         root.on();
         r2.on();

@@ -11,13 +11,14 @@ Then run `npm run dev`
 
 # Explanation
 
-puzzle_tree/
-├── public/ ← static files served as-is (favicon etc)
-├── src/
-│ ├── App.tsx ← the root React component (we'll gut this)
-│ ├── main.tsx ← entry point, mounts App into the HTML
-│ └── index.css ← global styles
-├── index.html ← the single HTML page (just a shell, loads main.tsx)
-├── package.json ← project config + dependency list
-├── tsconfig.json ← TypeScript config
-└── vite.config.ts ← Vite config
+```
+logic_nodes
+    Contains the logical components for evaluating the state of each component
+    Also contains tests
+
+```
+
+# Ideas
+
+- Maybe we dont need the edge? Just connect the parts to each other directly? You
+    - You dont want an edge without it connecting to something
