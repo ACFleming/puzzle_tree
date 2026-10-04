@@ -15,7 +15,7 @@ import {
     SwitchNode,
     LeafNode,
     Edge as TreeEdge,
-} from "./nodeLogic";
+} from "./logic_nodes";
 import type { FlowNode, FlowEdge, NodeData, EdgeData } from "./types";
 
 // ── Store shape ───────────────────────────────────────────────────────────────
